@@ -1,4 +1,4 @@
-name: Android CI/CD (Debug APK)
+name: Android CI/CD
 
 on:
   push:
@@ -8,7 +8,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-debug:
+    # Runs on every push/PR — quick sanity-check build, not signed for release
+    if: "!startsWith(github.ref, 'refs/tags/v')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,18 +29,11 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      # This repo does not have a committed Gradle wrapper (no gradlew /
-      # gradle/wrapper/*), so we install Gradle directly instead of relying
-      # on ./gradlew. Once a wrapper is added to the repo, this step can be
-      # swapped back to actions/setup-java + ./gradlew as usual.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: current
 
-      # build.gradle.kts points the debug signingConfig at ./debug.keystore,
-      # which is intentionally gitignored — generate a standard Android debug
-      # keystore here so CI builds succeed the same way Android Studio does locally.
       - name: Generate debug keystore
         run: |
           keytool -genkeypair -v \
@@ -57,11 +52,58 @@ jobs:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
 
+  release:
+    # Runs only when you push a version tag (e.g. v1.0.0) — builds a properly
+    # signed release APK using your real keystore, and publishes it to
+    # GitHub Releases.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required SDK platform & build-tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: current
+
+      # Decode the release keystore from the base64 secret
+      - name: Decode release keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks
+
+      # Write the real Gemini key so release builds have working AI features.
+      # Skips harmlessly (falls back to placeholder) if the secret isn't set.
+      - name: Write .env
+        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: gradle assembleRelease --stacktrace
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f my-upload-key.jks .env
+
       - name: Publish to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/debug/*.apk
+          files: app/build/outputs/apk/release/*.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
