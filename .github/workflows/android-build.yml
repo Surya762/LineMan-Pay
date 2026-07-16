@@ -85,9 +85,18 @@ jobs:
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks
 
       # Write the real Gemini key so release builds have working AI features.
-      # Skips harmlessly (falls back to placeholder) if the secret isn't set.
+      # If the secret isn't set, we skip creating .env entirely so the
+      # project falls back to .env.example's placeholder value (same as
+      # the working debug build) instead of writing an empty/broken value.
       - name: Write .env
-        run: echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -n "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
+          else
+            echo "GEMINI_API_KEY secret not set — falling back to .env.example placeholder"
+          fi
 
       - name: Build signed release APK
         env:
