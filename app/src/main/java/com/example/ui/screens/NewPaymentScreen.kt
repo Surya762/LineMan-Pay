@@ -69,6 +69,7 @@ fun NewPaymentForm(
     val customerName by viewModel.customerName.collectAsState()
     val serviceNumber by viewModel.serviceNumber.collectAsState()
     val billAmount by viewModel.billAmount.collectAsState()
+    val rcAmount by viewModel.rcAmount.collectAsState()
     val notes by viewModel.notes.collectAsState()
     val isProcessing by viewModel.isProcessingPayment.collectAsState()
     val lastCollection by viewModel.lastCollectionRecord.collectAsState()
@@ -246,6 +247,43 @@ fun NewPaymentForm(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("payment_bill_amount"),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = SurfaceLowest,
+                                focusedContainerColor = SurfaceLowest,
+                                focusedBorderColor = PrimaryBlue,
+                                unfocusedBorderColor = OutlineVariantColor
+                            ),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                    }
+
+                    // RC Amount
+                    Column {
+                        Text(
+                            text = "RC Amount",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = OnSurfaceColor,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        OutlinedTextField(
+                            value = rcAmount,
+                            onValueChange = { viewModel.updateRcAmount(it) },
+                            placeholder = { Text("0.00", color = OutlineVariantColor) },
+                            leadingIcon = {
+                                Text(
+                                    text = "₹",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = OnSurfaceVariantColor,
+                                    modifier = Modifier.padding(start = 12.dp, end = 4.dp)
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("payment_rc_amount"),
                             shape = RoundedCornerShape(8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 unfocusedContainerColor = SurfaceLowest,

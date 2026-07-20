@@ -147,10 +147,19 @@ fun OfficialEasternPowerReceipt(
             
             ReceiptFieldRow(label = "Received From :", value = record.customerName)
             
-            // To mimic the exact uploaded receipt
-            ReceiptFieldRow(label = "Bill Amount :", value = "0")
-            ReceiptFieldRow(label = "RC Amount :", value = String.format("%.0f", record.billAmount))
-            ReceiptFieldRow(label = "Amount Paid :", value = String.format("%.2f", record.billAmount))
+            val totalAmount = record.billAmount + record.rcAmount
+
+            ReceiptFieldRow(label = "Bill Amount :", value = String.format("%.2f", record.billAmount))
+            ReceiptFieldRow(label = "RC Amount :", value = String.format("%.2f", record.rcAmount))
+
+            HorizontalDivider(color = ReceiptRed.copy(alpha = 0.4f), thickness = 1.dp, modifier = Modifier.padding(vertical = 2.dp))
+
+            ReceiptFieldRow(
+                label = "Total Amount :",
+                value = "${record.currency}${String.format("%.2f", totalAmount)}",
+                emphasize = true
+            )
+            ReceiptFieldRow(label = "Amount Paid :", value = String.format("%.2f", totalAmount))
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -207,7 +216,8 @@ fun RedDashedLine(modifier: Modifier = Modifier) {
 fun ReceiptFieldRow(
     label: String,
     value: String,
-    isMono: Boolean = false
+    isMono: Boolean = false,
+    emphasize: Boolean = false
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -216,15 +226,15 @@ fun ReceiptFieldRow(
     ) {
         Text(
             text = label,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = ReceiptPrimaryBlue
+            fontSize = if (emphasize) 16.sp else 14.sp,
+            fontWeight = if (emphasize) FontWeight.Bold else FontWeight.Medium,
+            color = if (emphasize) ReceiptRed else ReceiptPrimaryBlue
         )
         Text(
             text = value,
-            fontSize = 14.sp,
+            fontSize = if (emphasize) 17.sp else 14.sp,
             fontWeight = FontWeight.Bold,
-            color = ReceiptPrimaryBlue,
+            color = if (emphasize) ReceiptRed else ReceiptPrimaryBlue,
             fontFamily = if (isMono) FontFamily.Monospace else FontFamily.Default,
             textAlign = TextAlign.End
         )
