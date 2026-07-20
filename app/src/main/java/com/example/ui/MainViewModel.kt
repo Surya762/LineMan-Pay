@@ -87,6 +87,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _billAmount = MutableStateFlow("")
     val billAmount: StateFlow<String> = _billAmount.asStateFlow()
 
+    private val _rcAmount = MutableStateFlow("")
+    val rcAmount: StateFlow<String> = _rcAmount.asStateFlow()
+
     private val _notes = MutableStateFlow("")
     val notes: StateFlow<String> = _notes.asStateFlow()
 
@@ -106,15 +109,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Dynamic stats derived from actual records
     val todayCollectionsSum: StateFlow<Double> = allCollections.map { list ->
-        list.filter { isToday(it.timestamp) && it.status == "Paid" && it.currency == "₹" }.sumOf { it.billAmount }
+        list.filter { isToday(it.timestamp) && it.status == "Paid" && it.currency == "₹" }.sumOf { it.billAmount + it.rcAmount }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 12450.0)
 
     val monthCollectionsSumInRupees: StateFlow<Double> = allCollections.map { list ->
-        list.filter { it.currency == "₹" && it.status == "Paid" }.sumOf { it.billAmount }
+        list.filter { it.currency == "₹" && it.status == "Paid" }.sumOf { it.billAmount + it.rcAmount }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 124500.0)
 
     val todayCollectionsSumInRupees: StateFlow<Double> = allCollections.map { list ->
-        list.filter { isToday(it.timestamp) && it.currency == "₹" && it.status == "Paid" }.sumOf { it.billAmount }
+        list.filter { isToday(it.timestamp) && it.currency == "₹" && it.status == "Paid" }.sumOf { it.billAmount + it.rcAmount }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 42850.0)
 
     val totalPaymentCount: StateFlow<Int> = allCollections.map { list ->
@@ -227,6 +230,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _billAmount.value = amount
     }
 
+    fun updateRcAmount(amount: String) {
+        _rcAmount.value = amount
+    }
+
     fun updateNotes(notes: String) {
         _notes.value = notes
     }
@@ -235,6 +242,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val name = _customerName.value.trim()
         val sNo = _serviceNumber.value.trim()
         val amt = _billAmount.value.toDoubleOrNull() ?: 0.0
+        val rc = _rcAmount.value.toDoubleOrNull() ?: 0.0
 
         if (name.isEmpty() || sNo.isEmpty() || amt <= 0.0) {
             return
@@ -252,6 +260,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 customerName = name,
                 serviceNumber = sNo,
                 billAmount = amt,
+                rcAmount = rc,
                 notes = _notes.value,
                 status = "Paid",
                 timestamp = System.currentTimeMillis(),
@@ -269,6 +278,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _customerName.value = ""
             _serviceNumber.value = ""
             _billAmount.value = ""
+            _rcAmount.value = ""
             _notes.value = ""
         }
     }

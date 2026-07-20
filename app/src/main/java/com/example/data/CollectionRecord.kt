@@ -1,4 +1,4 @@
-package com.example.data
+	package com.example.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -10,6 +10,7 @@ data class CollectionRecord(
     val customerName: String,
     val serviceNumber: String,
     val billAmount: Double,
+    val rcAmount: Double = 0.0,
     val notes: String = "",
     val status: String, // "Paid", "Pending", "Overdue"
     val timestamp: Long,

@@ -478,7 +478,7 @@ fun RecentCollectionItem(item: CollectionRecord) {
             }
 
             Text(
-                text = "${item.currency}${String.format("%,.2f", item.billAmount)}",
+                text = "${item.currency}${String.format("%,.2f", item.billAmount + item.rcAmount)}",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryBlue

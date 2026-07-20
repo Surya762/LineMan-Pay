@@ -551,7 +551,7 @@ fun TransactionTableRow(record: CollectionRecord) {
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${record.currency}${String.format("%,.2f", record.billAmount)}",
+                    text = "${record.currency}${String.format("%,.2f", record.billAmount + record.rcAmount)}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = OnSurfaceColor

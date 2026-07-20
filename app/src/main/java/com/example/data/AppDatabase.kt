@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [CollectionRecord::class], version = 1, exportSchema = false)
+@Database(entities = [CollectionRecord::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun collectionDao(): CollectionDao
 
@@ -19,7 +19,13 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "lineman_pay_database"
-                ).build()
+                )
+                    // v1 -> v2 added rcAmount; no prior installs to preserve yet,
+                    // so a destructive fallback is simplest. Replace with a real
+                    // Migration(1, 2) if this app is already in the field with
+                    // data you need to keep.
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
