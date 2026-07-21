@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -15,11 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.CollectionRecord
 import java.text.SimpleDateFormat
 import java.util.*
@@ -66,43 +69,11 @@ fun OfficialEasternPowerReceipt(
                 .fillMaxWidth()
                 .padding(bottom = 12.dp)
         ) {
-            Canvas(modifier = Modifier.size(32.dp)) {
-                // Draw 'e' swirl
-                drawArc(
-                    color = ReceiptPrimaryBlue,
-                    startAngle = 45f,
-                    sweepAngle = 270f,
-                    useCenter = false,
-                    style = Stroke(width = 5f, cap = StrokeCap.Round)
-                )
-                // Swirl inner bar
-                drawLine(
-                    color = ReceiptPrimaryBlue,
-                    start = Offset(size.width * 0.25f, size.height * 0.5f),
-                    end = Offset(size.width * 0.85f, size.height * 0.5f),
-                    strokeWidth = 5f,
-                    cap = StrokeCap.Round
-                )
-            }
-            Spacer(modifier = Modifier.width(6.dp))
-            Column {
-                Text(
-                    text = "Eastern",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ReceiptPrimaryBlue,
-                    fontFamily = FontFamily.SansSerif,
-                    lineHeight = 16.sp
-                )
-                Text(
-                    text = "power",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Gray,
-                    fontFamily = FontFamily.SansSerif,
-                    lineHeight = 10.sp
-                )
-            }
+            Image(
+                painter = painterResource(id = R.drawable.eastern_power_logo),
+                contentDescription = "Eastern power logo",
+                modifier = Modifier.height(48.dp)
+            )
         }
 
         // 2. PAYMENT RECEIPT Title with Dashed Lines
