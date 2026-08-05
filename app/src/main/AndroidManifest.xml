@@ -2,6 +2,27 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Legacy Bluetooth permissions, required on Android 11 (API 30) and below -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+    <!-- Android 12+ (API 31+) runtime permissions for scanning and connecting.
+         neverForLocation tells the system we only use scan results for
+         device name/address, not physical location — this lets us skip
+         requesting location permission on API 31+. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+
+    <!-- Below Android 12, classic Bluetooth device discovery requires
+         location permission (an OS quirk, not related to actual location
+         use — we never read the phone's GPS location). -->
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="30" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

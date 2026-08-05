@@ -1,6 +1,11 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.*
@@ -26,11 +31,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import coil.compose.rememberAsyncImagePainter
 import com.example.data.CollectionRecord
+import com.example.printer.BluetoothPrinterManager
+import com.example.printer.PrinterPreferences
 import com.example.ui.AppTab
 import com.example.ui.MainViewModel
 import com.example.ui.theme.*
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -479,19 +488,130 @@ fun ReceiptSuccessScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     var printStatus by remember { mutableStateOf("Print Receipt") }
     var isPrinting by remember { mutableStateOf(false) }
+    var showDevicePicker by remember { mutableStateOf(false) }
+    var isScanning by remember { mutableStateOf(false) }
+    var discoveredDevices by remember { mutableStateOf<List<BluetoothPrinterManager.PairedPrinter>>(emptyList()) }
 
-    LaunchedEffect(isPrinting) {
-        if (isPrinting) {
-            printStatus = "Connecting to Printer..."
-            kotlinx.coroutines.delay(1200)
-            printStatus = "Printing..."
-            kotlinx.coroutines.delay(1200)
-            printStatus = "Printed Successfully!"
-            isPrinting = false
-            Toast.makeText(context, "Receipt Printed!", Toast.LENGTH_SHORT).show()
+    fun startScanAndShowPicker() {
+        if (!BluetoothPrinterManager.isBluetoothEnabled(context)) {
+            Toast.makeText(context, "Turn on Bluetooth and try again.", Toast.LENGTH_LONG).show()
+            return
         }
+        discoveredDevices = emptyList()
+        showDevicePicker = true
+    }
+
+    // Collects live scan results while the picker is open. Cancelling this
+    // (dialog dismissed) cleanly stops discovery and unregisters the
+    // Bluetooth receiver via awaitClose in scanDevices().
+    LaunchedEffect(showDevicePicker) {
+        if (showDevicePicker) {
+            isScanning = true
+            BluetoothPrinterManager.scanDevices(context).collect { device ->
+                discoveredDevices = (discoveredDevices + device).distinctBy { it.address }
+            }
+            isScanning = false
+        }
+    }
+
+    // Bluetooth permissions differ by Android version:
+    // - API 31+ (Android 12+): needs BLUETOOTH_SCAN + BLUETOOTH_CONNECT (runtime prompts)
+    // - Below API 31: needs ACCESS_FINE_LOCATION for discovery (an OS quirk,
+    //   unrelated to actually reading location); BLUETOOTH/BLUETOOTH_ADMIN are
+    //   install-time only and need no runtime prompt.
+    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.all { it }) {
+            startScanAndShowPicker()
+        } else {
+            Toast.makeText(context, "Bluetooth permission is needed to find your printer.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun onPrintClicked() {
+        val requiredPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        val allGranted = requiredPermissions.all {
+            ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+        }
+        if (allGranted) {
+            startScanAndShowPicker()
+        } else {
+            bluetoothPermissionLauncher.launch(requiredPermissions)
+        }
+    }
+
+    fun printToSelectedDevice(device: BluetoothPrinterManager.PairedPrinter) {
+        showDevicePicker = false
+        isPrinting = true
+        printStatus = "Connecting to ${device.name}..."
+        coroutineScope.launch {
+            val bytes = BluetoothPrinterManager.buildReceiptBytes(record)
+            printStatus = "Printing..."
+            when (val result = BluetoothPrinterManager.printToDevice(context, device.address, bytes)) {
+                is BluetoothPrinterManager.PrintResult.Success -> {
+                    printStatus = "Printed Successfully!"
+                    Toast.makeText(context, "Receipt printed!", Toast.LENGTH_SHORT).show()
+                    PrinterPreferences.saveSelectedPrinter(context, device.address, device.name)
+                }
+                is BluetoothPrinterManager.PrintResult.Failure -> {
+                    printStatus = "Print Receipt"
+                    Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                }
+            }
+            isPrinting = false
+        }
+    }
+
+    if (showDevicePicker) {
+        AlertDialog(
+            onDismissRequest = { showDevicePicker = false },
+            title = { Text(if (isScanning) "Scanning for printers..." else "Select Printer") },
+            text = {
+                Column {
+                    if (isScanning) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    if (discoveredDevices.isEmpty() && !isScanning) {
+                        Text(
+                            "No devices found. Make sure the printer is powered on and nearby.",
+                            color = OnSurfaceVariantColor,
+                            fontSize = 14.sp
+                        )
+                    }
+                    discoveredDevices.forEach { device ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { printToSelectedDevice(device) }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(imageVector = Icons.Default.Bluetooth, contentDescription = null, tint = PrimaryBlue)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(text = device.name, fontWeight = FontWeight.Bold)
+                                Text(text = device.address, fontSize = 12.sp, color = OnSurfaceVariantColor)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDevicePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Column(
@@ -587,7 +707,7 @@ fun ReceiptSuccessScreen(
 
             // Print button (Primary)
             Button(
-                onClick = { isPrinting = true },
+                onClick = { onPrintClicked() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
