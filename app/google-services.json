@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "256970059237",
+    "project_id": "line-man-pay",
+    "storage_bucket": "line-man-pay.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:256970059237:android:424a6786cc02041e11d30c",
+        "android_client_info": {
+          "package_name": "com.linemanpay.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsTJRYrN2MDw8SToYfm7NI1oY0Thm4rQA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
