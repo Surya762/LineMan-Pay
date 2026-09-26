@@ -126,8 +126,8 @@ fun OfficialEasternPowerReceipt(
             HorizontalDivider(color = ReceiptRed.copy(alpha = 0.4f), thickness = 1.dp, modifier = Modifier.padding(vertical = 2.dp))
 
             ReceiptFieldRow(
-                label = "Total Amount (Rs.):",
-                value = "{String.format("%.2f", totalAmount)}",
+                label = "Total Amount(Rs.) :",
+                value = String.format("%.2f", totalAmount),
                 emphasize = true
             )
             ReceiptFieldRow(label = "Amount Paid :", value = String.format("%.2f", totalAmount))
