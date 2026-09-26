@@ -292,7 +292,7 @@ object BluetoothPrinterManager {
 
         val total = record.billAmount + record.rcAmount
         out.write(bold(true))
-        line(fieldLine("Total Amount", "${record.currency}${"%.2f".format(total)}"))
+        line(fieldLine("Total Amount(Rs.)","%.2f".format(total)))
         out.write(bold(false))
         line(fieldLine("Amount Paid", "%.2f".format(total)))
         line("-".repeat(LINE_WIDTH))
